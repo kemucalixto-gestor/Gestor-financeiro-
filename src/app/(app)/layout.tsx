@@ -12,7 +12,7 @@ export default async function AppLayout({
   await generatePendingTransactions(user.id).catch(() => undefined);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col pb-20">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col pb-[calc(4rem+env(safe-area-inset-bottom))]">
       {children}
       <BottomNav />
     </div>
