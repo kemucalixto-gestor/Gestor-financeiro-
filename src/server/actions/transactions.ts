@@ -160,7 +160,7 @@ export async function saveTransaction(
       .where(eq(goals.id, data.goalId));
   }
 
-  if (!data.id && data.createRecurring) {
+  if (data.createRecurring) {
     await db.insert(recurringRules).values({
       userId: user.id,
       categoryId: data.categoryId,

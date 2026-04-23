@@ -198,6 +198,10 @@ export function TransactionForm({
           setError("Selecione uma categoria");
           return;
         }
+        if (accounts.length > 0 && !accountId) {
+          setError("Selecione uma conta");
+          return;
+        }
         startTransition(async () => {
           try {
             await saveTransaction({
@@ -213,14 +217,13 @@ export function TransactionForm({
               goalId: goalId || null,
               tags: tagsFromInput(tagsInput),
               installmentTotal: installments > 1 ? installments : null,
-              createRecurring:
-                !initial && isRecurring
-                  ? {
-                      frequency: recFrequency,
-                      dayOfMonth: recFrequency === "monthly" ? recDayOfMonth : null,
-                      dayOfWeek: recFrequency === "weekly" ? recDayOfWeek : null,
-                    }
-                  : null,
+              createRecurring: isRecurring
+                ? {
+                    frequency: recFrequency,
+                    dayOfMonth: recFrequency === "monthly" ? recDayOfMonth : null,
+                    dayOfWeek: recFrequency === "weekly" ? recDayOfWeek : null,
+                  }
+                : null,
             });
             router.push("/transactions");
             router.refresh();
@@ -347,16 +350,12 @@ export function TransactionForm({
 
       {accounts.length > 0 && (
         <div>
-          <Label>Conta (opcional)</Label>
-          <Select
-            value={accountId || "__none__"}
-            onValueChange={(v) => setAccountId(v === "__none__" ? "" : v)}
-          >
+          <Label>Conta</Label>
+          <Select value={accountId} onValueChange={setAccountId}>
             <SelectTrigger>
               <SelectValue placeholder="Escolha uma conta" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none__">Sem conta específica</SelectItem>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {a.name}
@@ -471,7 +470,16 @@ export function TransactionForm({
         </p>
       </div>
 
-      {!initial && installments <= 1 && (
+      {initial?.recurringRuleId && (
+        <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+          Este lançamento foi gerado por uma recorrência. Edite a regra em{" "}
+          <a href="/recurring" className="font-medium text-primary">
+            Recorrências
+          </a>
+          .
+        </div>
+      )}
+      {installments <= 1 && !initial?.recurringRuleId && (
         <div className="flex flex-col gap-2 rounded-lg border p-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input
@@ -480,7 +488,9 @@ export function TransactionForm({
               onChange={(e) => setIsRecurring(e.target.checked)}
               className="h-4 w-4 rounded border-input"
             />
-            Pagamento recorrente (ex: assinatura, aluguel, salário)
+            {initial
+              ? "Transformar em pagamento recorrente"
+              : "Pagamento recorrente (ex: assinatura, aluguel, salário)"}
           </label>
           {isRecurring && (
             <div className="flex flex-col gap-3">
@@ -544,7 +554,9 @@ export function TransactionForm({
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Uma regra de recorrência será criada automaticamente junto com este lançamento.
+                {initial
+                  ? "Uma regra de recorrência será criada a partir deste lançamento e aparecerá em Recorrências."
+                  : "Uma regra de recorrência será criada automaticamente junto com este lançamento."}
               </p>
             </div>
           )}
