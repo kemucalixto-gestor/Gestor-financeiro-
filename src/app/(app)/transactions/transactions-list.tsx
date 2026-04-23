@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatBRL } from "@/lib/money";
 import { formatDateLabel } from "@/lib/dates";
+import { parseTags } from "@/lib/tags";
 import { deleteTransaction } from "@/server/actions/transactions";
 import { useRouter } from "next/navigation";
 
@@ -122,7 +123,22 @@ export function TransactionsList({
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {cat?.name ?? "—"}
+                      {t.installmentTotal && t.installmentNumber
+                        ? ` · ${t.installmentNumber}/${t.installmentTotal}`
+                        : ""}
                     </p>
+                    {parseTags(t.tagsJson).length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {parseTags(t.tagsJson).map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <p

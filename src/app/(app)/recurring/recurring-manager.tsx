@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
 import type { Category, RecurringRule } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,10 @@ import { MoneyInput } from "@/components/MoneyInput";
 import { formatBRL } from "@/lib/money";
 import { todayISO } from "@/lib/dates";
 import { deleteRecurring, saveRecurring } from "@/server/actions/recurring";
+import {
+  detectSubscriptions,
+  type SubscriptionSuggestion,
+} from "@/server/actions/detect-subscriptions";
 import { useRouter } from "next/navigation";
 
 const WEEKDAY_NAMES = [
@@ -43,9 +47,39 @@ export function RecurringManager({
   const [editing, setEditing] = useState<
     { mode: "create" } | { mode: "edit"; rule: RecurringRule } | null
   >(null);
+  const [suggestions, setSuggestions] = useState<SubscriptionSuggestion[] | null>(
+    null,
+  );
+  const [detecting, setDetecting] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const catMap = Object.fromEntries(categories.map((c) => [c.id, c]));
+
+  async function handleDetect() {
+    setDetecting(true);
+    try {
+      const list = await detectSubscriptions();
+      setSuggestions(list);
+    } finally {
+      setDetecting(false);
+    }
+  }
+
+  async function acceptSuggestion(s: SubscriptionSuggestion) {
+    await saveRecurring({
+      type: "expense",
+      categoryId: s.categoryId,
+      amountCents: s.amountCents,
+      description: s.description,
+      frequency: "monthly",
+      dayOfMonth: s.dayOfMonth,
+      dayOfWeek: null,
+      startsOn: s.sampleDates[s.sampleDates.length - 1] ?? todayISO(),
+      endsOn: null,
+    });
+    setSuggestions((prev) => (prev ? prev.filter((x) => x !== s) : prev));
+    router.refresh();
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -116,13 +150,47 @@ export function RecurringManager({
         );
       })}
 
-      <Button
-        variant="outline"
-        className="mt-2"
-        onClick={() => setEditing({ mode: "create" })}
-      >
-        <Plus className="h-4 w-4" /> Nova recorrência
-      </Button>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <Button variant="outline" onClick={() => setEditing({ mode: "create" })}>
+          <Plus className="h-4 w-4" /> Nova
+        </Button>
+        <Button variant="outline" onClick={handleDetect} disabled={detecting}>
+          <Sparkles className={`h-4 w-4 ${detecting ? "animate-pulse" : ""}`} />
+          {detecting ? "Analisando..." : "Detectar assinaturas"}
+        </Button>
+      </div>
+
+      {suggestions && (
+        <div className="mt-3 flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+          <p className="text-xs font-semibold uppercase text-muted-foreground">
+            Sugestões detectadas
+          </p>
+          {suggestions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Não encontrei padrões claros. Faça alguns lançamentos nos próximos meses e tente de novo.
+            </p>
+          ) : (
+            suggestions.map((s, i) => (
+              <Card key={i}>
+                <CardContent className="flex items-center gap-3 p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-medium">{s.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {s.categoryName} · todo dia {s.dayOfMonth} · {s.occurrencesFound}× nos últimos 4 meses
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-expense">
+                    {formatBRL(s.amountCents)}
+                  </p>
+                  <Button size="sm" onClick={() => acceptSuggestion(s)}>
+                    Criar
+                  </Button>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
 
       {editing && (
         <RecurringEditor

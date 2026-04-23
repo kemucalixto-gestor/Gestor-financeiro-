@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, asc, desc, eq, gte, lte, sum } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, ne, sum } from "drizzle-orm";
 import { Plus } from "lucide-react";
 import { db } from "@/db/client";
 import { categories, transactions } from "@/db/schema";
@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MonthlyChart } from "@/components/charts/MonthlyChart";
 import { CategoryPieChart } from "@/components/charts/CategoryPieChart";
+import { ForecastCard } from "@/components/ForecastCard";
+import { forecastMonth } from "@/lib/forecast";
 import { formatBRL } from "@/lib/money";
 import {
   currentMonthKey,
@@ -23,7 +25,7 @@ export default async function DashboardPage() {
   const month = currentMonthKey();
   const { start, end } = monthBounds(month);
 
-  const [monthTotals, latest, cats, perCategoryMonth, history] = await Promise.all([
+  const [monthTotals, latest, cats, perCategoryMonth, history, forecast] = await Promise.all([
     db
       .select({
         type: transactions.type,
@@ -35,6 +37,7 @@ export default async function DashboardPage() {
           eq(transactions.userId, user.id),
           gte(transactions.occurredOn, start),
           lte(transactions.occurredOn, end),
+          ne(transactions.type, "transfer"),
         ),
       )
       .groupBy(transactions.type),
@@ -42,7 +45,12 @@ export default async function DashboardPage() {
     db
       .select()
       .from(transactions)
-      .where(eq(transactions.userId, user.id))
+      .where(
+        and(
+          eq(transactions.userId, user.id),
+          ne(transactions.type, "transfer"),
+        ),
+      )
       .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt))
       .limit(5),
 
@@ -77,9 +85,12 @@ export default async function DashboardPage() {
       .where(
         and(
           eq(transactions.userId, user.id),
+          ne(transactions.type, "transfer"),
           gte(transactions.occurredOn, monthBounds(lastNMonths(6)[0]).start),
         ),
       ),
+
+    forecastMonth(user.id),
   ]);
 
   const income =
@@ -146,6 +157,8 @@ export default async function DashboardPage() {
             <Plus className="h-4 w-4" /> Novo lançamento
           </Link>
         </Button>
+
+        <ForecastCard forecast={forecast} />
 
         <Card>
           <CardContent className="p-4">
