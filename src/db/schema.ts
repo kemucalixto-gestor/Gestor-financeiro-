@@ -72,6 +72,7 @@ export const transactions = sqliteTable("transactions", {
   amountCents: integer("amount_cents").notNull(),
   description: text("description").notNull().default(""),
   occurredOn: text("occurred_on").notNull(),
+  attachmentUrl: text("attachment_url"),
   recurringRuleId: text("recurring_rule_id").references(
     () => recurringRules.id,
     { onDelete: "set null" },

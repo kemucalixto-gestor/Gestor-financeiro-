@@ -14,6 +14,12 @@ const transactionSchema = z.object({
   categoryId: z.string().min(1, "Selecione uma categoria"),
   description: z.string().max(200).default(""),
   occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  attachmentUrl: z
+    .string()
+    .url()
+    .max(500)
+    .nullable()
+    .optional(),
 });
 
 export async function saveTransaction(
@@ -42,6 +48,7 @@ export async function saveTransaction(
         categoryId: data.categoryId,
         description: data.description,
         occurredOn: data.occurredOn,
+        attachmentUrl: data.attachmentUrl ?? null,
       })
       .where(
         and(eq(transactions.id, data.id), eq(transactions.userId, user.id)),
@@ -54,6 +61,7 @@ export async function saveTransaction(
       categoryId: data.categoryId,
       description: data.description,
       occurredOn: data.occurredOn,
+      attachmentUrl: data.attachmentUrl ?? null,
     });
   }
 

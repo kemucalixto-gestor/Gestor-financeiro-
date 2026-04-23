@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { Paperclip, Pencil, Trash2 } from "lucide-react";
 import type { Category, Transaction } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -106,8 +106,19 @@ export function TransactionsList({
                     aria-hidden
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="truncate font-medium">
+                    <p className="flex items-center gap-1.5 truncate font-medium">
                       {t.description || cat?.name || "Lançamento"}
+                      {t.attachmentUrl && (
+                        <a
+                          href={t.attachmentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="Ver comprovante"
+                        >
+                          <Paperclip className="h-3.5 w-3.5 shrink-0 text-primary" />
+                        </a>
+                      )}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {cat?.name ?? "—"}
@@ -123,6 +134,16 @@ export function TransactionsList({
                       {formatBRL(t.amountCents)}
                     </p>
                   </div>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Editar"
+                  >
+                    <Link href={`/transactions/${t.id}/edit`}>
+                      <Pencil className="h-4 w-4" />
+                    </Link>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
