@@ -38,14 +38,21 @@ export function BottomNav() {
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 bg-black/40"
+          onClick={() => setOpen(false)}
+        >
           <div
-            className="absolute inset-x-0 bottom-0 mx-auto max-w-md rounded-t-2xl bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+            className="absolute inset-x-0 bottom-0 mx-auto max-w-md rounded-t-2xl bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Mais</h2>
-              <button onClick={() => setOpen(false)} aria-label="Fechar">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Mais opções</h2>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Fechar"
+                className="rounded p-1 hover:bg-accent"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
