@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Camera, Paperclip, Sparkles, Wand2, X } from "lucide-react";
+import { Camera, ImageIcon, Paperclip, Sparkles, Wand2, X } from "lucide-react";
 import type {
   Account,
   Category,
@@ -46,13 +46,14 @@ export function TransactionForm({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanCameraRef = useRef<HTMLInputElement>(null);
+  const scanGalleryRef = useRef<HTMLInputElement>(null);
   const attachInputRef = useRef<HTMLInputElement>(null);
+  const [scanChoiceOpen, setScanChoiceOpen] = useState(false);
 
   useEffect(() => {
     if (!initial && searchParams.get("scan") === "1") {
-      // Pequeno delay para garantir que o input já está no DOM
-      const t = setTimeout(() => scanInputRef.current?.click(), 100);
+      const t = setTimeout(() => setScanChoiceOpen(true), 100);
       return () => clearTimeout(t);
     }
   }, [initial, searchParams]);
@@ -271,10 +272,21 @@ export function TransactionForm({
       )}
 
       <input
-        ref={scanInputRef}
+        ref={scanCameraRef}
         type="file"
         accept="image/*"
         capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleScanFile(f);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={scanGalleryRef}
+        type="file"
+        accept="image/*"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -287,7 +299,7 @@ export function TransactionForm({
         variant="outline"
         size="lg"
         disabled={busy}
-        onClick={() => scanInputRef.current?.click()}
+        onClick={() => setScanChoiceOpen(true)}
       >
         {scanning ? (
           <>
@@ -301,6 +313,57 @@ export function TransactionForm({
           </>
         )}
       </Button>
+
+      {scanChoiceOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+          onClick={() => setScanChoiceOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Escanear como:</h3>
+              <button
+                onClick={() => setScanChoiceOpen(false)}
+                aria-label="Fechar"
+                className="rounded p-1 hover:bg-accent"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="justify-start"
+                onClick={() => {
+                  setScanChoiceOpen(false);
+                  scanCameraRef.current?.click();
+                }}
+              >
+                <Camera className="h-5 w-5" />
+                Tirar foto agora
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="justify-start"
+                onClick={() => {
+                  setScanChoiceOpen(false);
+                  scanGalleryRef.current?.click();
+                }}
+              >
+                <ImageIcon className="h-5 w-5" />
+                Escolher da galeria
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {scanMessage && (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Sparkles className="h-3 w-3 text-primary" />
