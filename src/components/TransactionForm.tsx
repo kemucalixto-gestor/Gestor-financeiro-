@@ -79,6 +79,17 @@ export function TransactionForm({
   );
   const [nlInput, setNlInput] = useState("");
 
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recFrequency, setRecFrequency] = useState<"monthly" | "weekly">("monthly");
+  const [recDayOfMonth, setRecDayOfMonth] = useState<number>(() => {
+    const d = new Date(initial?.occurredOn ?? todayISO());
+    return d.getDate();
+  });
+  const [recDayOfWeek, setRecDayOfWeek] = useState<number>(() => {
+    const d = new Date(initial?.occurredOn ?? todayISO());
+    return d.getDay();
+  });
+
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanMessage, setScanMessage] = useState<string | null>(null);
@@ -193,6 +204,14 @@ export function TransactionForm({
               goalId: goalId || null,
               tags: tagsFromInput(tagsInput),
               installmentTotal: installments > 1 ? installments : null,
+              createRecurring:
+                !initial && isRecurring
+                  ? {
+                      frequency: recFrequency,
+                      dayOfMonth: recFrequency === "monthly" ? recDayOfMonth : null,
+                      dayOfWeek: recFrequency === "weekly" ? recDayOfWeek : null,
+                    }
+                  : null,
             });
             router.push("/transactions");
             router.refresh();
@@ -320,12 +339,15 @@ export function TransactionForm({
       {accounts.length > 0 && (
         <div>
           <Label>Conta (opcional)</Label>
-          <Select value={accountId} onValueChange={setAccountId}>
+          <Select
+            value={accountId || "__none__"}
+            onValueChange={(v) => setAccountId(v === "__none__" ? "" : v)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Escolha uma conta" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Sem conta específica</SelectItem>
+              <SelectItem value="__none__">Sem conta específica</SelectItem>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {a.name}
@@ -340,12 +362,15 @@ export function TransactionForm({
         <>
           <div>
             <Label>Cartão de crédito (opcional)</Label>
-            <Select value={creditCardId} onValueChange={setCreditCardId}>
+            <Select
+              value={creditCardId || "__none__"}
+              onValueChange={(v) => setCreditCardId(v === "__none__" ? "" : v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Sem cartão" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem cartão</SelectItem>
+                <SelectItem value="__none__">Sem cartão</SelectItem>
                 {creditCards.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
@@ -383,12 +408,15 @@ export function TransactionForm({
       {type === "income" && incomeGoals.length > 0 && (
         <div>
           <Label>Contribuir para meta (opcional)</Label>
-          <Select value={goalId} onValueChange={setGoalId}>
+          <Select
+            value={goalId || "__none__"}
+            onValueChange={(v) => setGoalId(v === "__none__" ? "" : v)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Sem meta" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Sem meta</SelectItem>
+              <SelectItem value="__none__">Sem meta</SelectItem>
               {incomeGoals.map((g) => (
                 <SelectItem key={g.id} value={g.id}>
                   {g.name}
@@ -433,6 +461,86 @@ export function TransactionForm({
           Separe por vírgulas. Ex.: viagem sp, almoço
         </p>
       </div>
+
+      {!initial && installments <= 1 && (
+        <div className="flex flex-col gap-2 rounded-lg border p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            Pagamento recorrente (ex: assinatura, aluguel, salário)
+          </label>
+          {isRecurring && (
+            <div className="flex flex-col gap-3">
+              <div>
+                <Label>Frequência</Label>
+                <Select
+                  value={recFrequency}
+                  onValueChange={(v) => setRecFrequency(v as "monthly" | "weekly")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="weekly">Semanal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {recFrequency === "monthly" ? (
+                <div>
+                  <Label htmlFor="recDom">Dia do mês</Label>
+                  <Input
+                    id="recDom"
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={recDayOfMonth}
+                    onChange={(e) =>
+                      setRecDayOfMonth(
+                        Math.max(1, Math.min(31, Number(e.target.value) || 1)),
+                      )
+                    }
+                  />
+                </div>
+              ) : (
+                <div>
+                  <Label>Dia da semana</Label>
+                  <Select
+                    value={String(recDayOfWeek)}
+                    onValueChange={(v) => setRecDayOfWeek(Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        "Domingo",
+                        "Segunda",
+                        "Terça",
+                        "Quarta",
+                        "Quinta",
+                        "Sexta",
+                        "Sábado",
+                      ].map((w, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {w}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Uma regra de recorrência será criada automaticamente junto com este lançamento.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <Label>Comprovante (opcional)</Label>

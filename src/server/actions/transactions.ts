@@ -9,10 +9,23 @@ import {
   categories,
   creditCards,
   goals,
+  recurringRules,
   transactions,
 } from "@/db/schema";
 import { requireUser } from "@/lib/session";
 import { stringifyTags } from "@/lib/tags";
+
+const recurringOptionSchema = z
+  .object({
+    frequency: z.enum(["monthly", "weekly"]),
+    dayOfMonth: z.number().int().min(1).max(31).nullable().optional(),
+    dayOfWeek: z.number().int().min(0).max(6).nullable().optional(),
+  })
+  .refine(
+    (d) =>
+      d.frequency === "monthly" ? d.dayOfMonth != null : d.dayOfWeek != null,
+    { message: "Informe o dia da recorrência" },
+  );
 
 const transactionSchema = z.object({
   id: z.string().optional(),
@@ -27,6 +40,7 @@ const transactionSchema = z.object({
   goalId: z.string().nullable().optional(),
   tags: z.array(z.string()).nullable().optional(),
   installmentTotal: z.number().int().min(1).max(48).nullable().optional(),
+  createRecurring: recurringOptionSchema.nullable().optional(),
 });
 
 function addMonthsISO(iso: string, months: number): string {
@@ -144,6 +158,24 @@ export async function saveTransaction(
       .update(goals)
       .set({ currentCents: sql`${goals.currentCents} + ${data.amountCents}` })
       .where(eq(goals.id, data.goalId));
+  }
+
+  if (!data.id && data.createRecurring) {
+    await db.insert(recurringRules).values({
+      userId: user.id,
+      categoryId: data.categoryId,
+      accountId: data.accountId ?? null,
+      type: data.type,
+      amountCents: data.amountCents,
+      description: data.description || category.name,
+      frequency: data.createRecurring.frequency,
+      dayOfMonth: data.createRecurring.dayOfMonth ?? null,
+      dayOfWeek: data.createRecurring.dayOfWeek ?? null,
+      startsOn: data.occurredOn,
+      endsOn: null,
+      lastGeneratedOn: data.occurredOn,
+    });
+    revalidatePath("/recurring");
   }
 
   revalidatePath("/transactions");
