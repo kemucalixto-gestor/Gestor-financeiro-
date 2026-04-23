@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Camera, Paperclip, Sparkles, Wand2, X } from "lucide-react";
 import type {
   Account,
@@ -45,8 +45,17 @@ export function TransactionForm({
   initial,
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const scanInputRef = useRef<HTMLInputElement>(null);
   const attachInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!initial && searchParams.get("scan") === "1") {
+      // Pequeno delay para garantir que o input já está no DOM
+      const t = setTimeout(() => scanInputRef.current?.click(), 100);
+      return () => clearTimeout(t);
+    }
+  }, [initial, searchParams]);
 
   const [type, setType] = useState<"income" | "expense">(
     initial?.type === "income" ? "income" : "expense",
