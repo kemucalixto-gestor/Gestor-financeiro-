@@ -14,7 +14,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   CalendarClock,
-  Camera,
+  FileImage,
   Minus,
   PiggyBank,
   Plus,
@@ -426,9 +426,9 @@ export default async function DashboardPage() {
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="h-14">
-            <Link href="/transactions/new?scan=1">
-              <Camera className="h-5 w-5" />
-              Escanear nota
+            <Link href="/transactions/import">
+              <FileImage className="h-5 w-5" />
+              Importar extrato
             </Link>
           </Button>
         </div>

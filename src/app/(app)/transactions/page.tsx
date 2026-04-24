@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { and, asc, desc, eq, gte, like, lte, or } from "drizzle-orm";
-import { Download, Plus } from "lucide-react";
+import { Download, FileImage, Plus } from "lucide-react";
 import { db } from "@/db/client";
 import { categories, transactions } from "@/db/schema";
 import { requireUser } from "@/lib/session";
@@ -73,17 +73,25 @@ export default async function TransactionsPage({
     <>
       <TopBar title="Lançamentos" subtitle={formatMonthLabel(month)} />
       <main className="flex-1 px-4 py-4">
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-2 flex items-center gap-2">
           <MonthSelect value={month} options={options} />
           <Button asChild size="icon" variant="outline" aria-label="Exportar CSV">
             <a href={`/api/export/transactions?${exportParams.toString()}`}>
               <Download className="h-4 w-4" />
             </a>
           </Button>
+        </div>
+        <div className="mb-3 grid grid-cols-2 gap-2">
           <Button asChild>
-            <Link href="/transactions/new" aria-label="Novo lançamento">
+            <Link href="/transactions/new">
               <Plus className="h-4 w-4" />
               Novo
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/transactions/import">
+              <FileImage className="h-4 w-4" />
+              Importar extrato
             </Link>
           </Button>
         </div>
